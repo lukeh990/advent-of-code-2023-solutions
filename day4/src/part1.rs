@@ -54,7 +54,7 @@ fn read_cards() -> io::Result<Vec<Card>> {
         //println!("{}", id);
         let winning_numbers: Vec<u32> = split2[0].split(" ").map(|s| s.parse::<u32>().unwrap_or_default()).collect();
         let actual_numbers: Vec<u32> = split2[1].split(" ").map(|s| s.parse::<u32>().unwrap_or_default()).collect();
-        
+
         cards.push(Card {
             id,
             winning_numbers,
