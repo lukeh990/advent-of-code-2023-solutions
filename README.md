@@ -8,7 +8,7 @@ Hi! I'm participating in the 2023 AoC. Here I will share my solutions in Rust. F
 | 3 | ☑️ | ❎ |
 | 4 | ☑️ | ❎ |
 | 5 | ☑️ | ❎ |
-| 6 | ❎ | ❎ |
+| 6 | ☑️ | ❎ |
 | 7 | ❎ | ❎ |
 | 8 | ❎ | ❎ |
 | 9 | ❎ | ❎ |
