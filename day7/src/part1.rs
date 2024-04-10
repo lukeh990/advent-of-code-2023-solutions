@@ -1,137 +1,159 @@
-use std::fs;
-use std::error;
 use std::collections::HashMap;
+use std::error;
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum CardType {
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Joker,
+    Queen,
+    King,
+    Ace,
+}
+
+#[derive(Debug, Clone)]
+struct HandData {
+    cards: Vec<CardType>,
+    bid: u16,
+}
+
+impl HandData {
+    pub fn new(cards: Vec<CardType>, bid: u16) -> HandData {
+        HandData { cards, bid }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum HandRanks {
+    HighCard,
+    OnePair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind,
+}
+
+#[derive(Debug, Clone)]
+struct RankedHand {
+    rank: HandRanks,
+    hand_data: HandData,
+}
+
+impl RankedHand {
+    pub fn new(rank: HandRanks, hand_data: HandData) -> RankedHand {
+        RankedHand { rank, hand_data }
+    }
+}
+
 pub fn part1() -> Result<()> {
-    let _ = read_game();
+    let hands = create_hand_data("./inputTest.txt")?;
+    let ranked = create_ranked_hands(hands)?;
+    add_hand_weight(ranked);
     Ok(())
 }
 
-enum HandType {
-    FiveOfAKind,
-    FourOfAKind,
-    FullHouse,
-    ThreeOfAKind,
-    TwoPair,
-    OnePair,
-    HighCard
+fn add_hand_weight(ranked: Vec<RankedHand>) {
+    let mut ranked = ranked.clone();
+
+    // TODO: Implement Sorting!!
+    
+    println!("{:?}", ranked);
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-enum CardType {
-    Ace,
-    King,
-    Queen,
-    Joker,
-    Ten,
-    Nine,
-    Eight,
-    Seven,
-    Six,
-    Five,
-    Four,
-    Three,
-    Two
+fn create_ranked_hands(hands: Vec<HandData>) -> Result<Vec<RankedHand>> {
+    let mut ranked: Vec<RankedHand> = vec![];
+
+    for hand in hands {
+        let cards = hand.cards.clone();
+        let mut map: HashMap<CardType, u8> = HashMap::new();
+
+        for card in cards {
+            match map.get(&card) {
+                None => {
+                    map.insert(card, 1);
+                }
+                Some(value) => {
+                    map.insert(card, value + 1);
+                }
+            }
+        }
+
+        let mut values: Vec<u8> = map.values().map(|value| value.to_owned()).collect();
+        values.sort_by(|a, b| b.cmp(a));
+
+        if values[0] == 5 {
+            ranked.push(RankedHand::new(HandRanks::FiveOfAKind, hand))
+        } else if values[0] == 4 {
+            ranked.push(RankedHand::new(HandRanks::FourOfAKind, hand))
+        } else if values[0] == 3 && values[1] == 2 {
+            ranked.push(RankedHand::new(HandRanks::FullHouse, hand))
+        } else if values[0] == 3 && values[1] == 1 {
+            ranked.push(RankedHand::new(HandRanks::ThreeOfAKind, hand))
+        } else if values[0] == 2 && values[1] == 2 {
+            ranked.push(RankedHand::new(HandRanks::TwoPair, hand))
+        } else if values[0] == 2 {
+            ranked.push(RankedHand::new(HandRanks::OnePair, hand))
+        } else {
+            ranked.push(RankedHand::new(HandRanks::HighCard, hand))
+        }
+    }
+
+    Ok(ranked)
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-struct Card {
-    card_type: CardType
-}
+fn create_hand_data<T>(filename: T) -> Result<Vec<HandData>>
+where
+    T: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    let mut hands: Vec<HandData> = vec![];
 
-struct Hand {
-    hand_type: HandType,
-    cards: Vec<Card>,
-    rank: u32,
-    bid: u32
-}
+    for line in io::BufReader::new(file).lines() {
+        let line = line?;
+        let (card_string, bid) = line.split_at(6);
 
-fn read_game() -> Result<Vec<Hand>> {
-    let hands: Vec<Hand> = vec![];
+        let bid: u16 = bid.parse()?;
 
-    let text = fs::read_to_string("./inputTest.txt")?;
+        let mut card_chars = card_string.chars();
+        card_chars.next_back();
+        let mut cards: Vec<CardType> = vec![];
 
-    for line in text.lines() {
-        let strings: Vec<String> = line.split_whitespace().map(String::from).collect();
-        let hand_string = strings[0].clone();
-        let bid: u32 = strings[1].parse()?;
-
-        let mut cards: Vec<Card> = vec![];
-        for symbol in hand_string.chars() {
-            let card_type = match symbol {
-                'A' => CardType::Ace,
-                'K' => CardType::King,
-                'Q' => CardType::Queen,
-                'J' => CardType::Joker,
-                'T' => CardType::Ten,
-                '9' => CardType::Nine,
-                '8' => CardType::Eight,
-                '7' => CardType::Seven,
-                '6' => CardType::Six,
-                '5' => CardType::Five,
-                '4' => CardType::Four,
-                '3' => CardType::Three,
+        for char in card_chars {
+            let card_type = match char {
                 '2' => CardType::Two,
-                _ => return Err("Bad Symbol".into())
+                '3' => CardType::Three,
+                '4' => CardType::Four,
+                '5' => CardType::Five,
+                '6' => CardType::Six,
+                '7' => CardType::Seven,
+                '8' => CardType::Eight,
+                '9' => CardType::Nine,
+                'T' => CardType::Ten,
+                'J' => CardType::Joker,
+                'Q' => CardType::Queen,
+                'K' => CardType::King,
+                'A' => CardType::Ace,
+                _ => return Err(format!("Non Card Char Detected: \'{}\'", char).into()),
             };
 
-            cards.push(Card {
-                card_type
-            });
+            cards.push(card_type)
         }
 
-        if cards.len() != 5 {
-            return Err("Card number is not 5".into());
-        }
-
-        let _ = hand_type(cards);
+        hands.push(HandData::new(cards, bid));
     }
 
     Ok(hands)
-}
-
-fn hand_type(cards: Vec<Card>) -> Result<HandType> {
-    let mut card_counts: HashMap<Card, u32> = HashMap::new();
-
-    for card in cards.iter() {
-        let current_count: u32 = match card_counts.get(card) {
-            Some(x) => *x,
-            None => 0
-        };
-
-        card_counts.insert(*card, current_count + 1);
-    }
- 
-    println!("{:?}", card_counts);
-
-    if card_counts.len() == 1 {
-        return Ok(HandType::FiveOfAKind);
-    } else if card_counts.len() == 2 {
-        let first_card = match card_counts.values().nth(0) {
-            Some(x) => *x as i32,
-            None => return Err("Unable to get value".into())
-        };
-        
-        let second_card = match card_counts.values().nth(1) {
-            Some(x) => *x as i32,
-            None => return Err("Unable to get value".into())
-        };
-
-        if (first_card - second_card).abs() == 3 {
-            return Ok(HandType::FourOfAKind);
-        } else if (first_card - second_card).abs() == 1 {
-            return Ok(HandType::FullHouse);
-        }
-    } else if card_counts.len() == 3 {
-        return Ok(HandType::ThreeOfAKind);
-        return Ok(HandType::TwoPair);
-    } else if card_counts.len() == 4 {
-        return Ok(HandType::OnePair);
-    } else if card_counts.len() == 5 {
-        return Ok(HandType::HighCard);
-    }
-
-    Err(format!("No Valid Hand Type {:?}", card_counts).into())
 }

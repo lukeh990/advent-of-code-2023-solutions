@@ -13,9 +13,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     input = input.trim().to_string();
 
     if input.eq("1") {
-        let _ = part1::part1()?;
+        part1::part1()?;
     } else if input.eq("2") {
-        let _ = part2::part2()?;
+        part2::part2()?;
     } else {
         println!("Input not valid, Try again.");
     }
