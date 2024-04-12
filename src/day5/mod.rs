@@ -3,7 +3,7 @@ use std::io::stdin;
 mod part1;
 mod part2;
 
-fn main() -> std::io::Result<()> {
+pub fn run() -> std::io::Result<()> {
     let mut input = String::new();
 
     println!("Part 1 or Part 2? (1/2)");
